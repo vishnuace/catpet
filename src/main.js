@@ -16,9 +16,16 @@ let store;
 let catWin = null;
 let settingsWin = null;
 let tray = null;
+let uio = null;
+let lastActivityAt = Date.now();
 
-const CAT_W = 240;
-const CAT_H = 240;
+const GRID = 40;
+function pxForSize(size) {
+  return Math.max(2, Math.min(8, Math.round(4 * (Number(size) || 1))));
+}
+function catDim() {
+  return GRID * pxForSize(store.get('size'));
+}
 
 // Timers
 let cursorTimer = null;
@@ -27,6 +34,11 @@ let pomo = { active: false, phase: 'work', endsAt: 0, timer: null };
 
 // Drag bookkeeping
 let drag = { active: false, offsetX: 0, offsetY: 0 };
+let lastCursor = { x: 0, y: 0 };
+
+// Walking controller
+let walk = { moving: false, dir: 1, tx: 0, ty: 0, nextAt: Date.now() + 5000 };
+let walkTimer = null;
 
 // Keep a single instance so the cat is never duplicated.
 const gotLock = app.requestSingleInstanceLock();
@@ -37,20 +49,21 @@ if (!gotLock) {
 function createCatWindow() {
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.workAreaSize;
+  const dim = catDim();
 
   let x = store.get('posX');
   let y = store.get('posY');
   if (x === null || y === null) {
-    x = width - CAT_W - 24;
-    y = height - CAT_H - 24;
+    x = width - dim - 24;
+    y = height - dim - 24;
   }
   // Clamp on-screen in case the saved spot is now off the desktop.
   x = Math.max(0, Math.min(x, width - 40));
   y = Math.max(0, Math.min(y, height - 40));
 
   catWin = new BrowserWindow({
-    width: CAT_W,
-    height: CAT_H,
+    width: dim,
+    height: dim,
     x,
     y,
     frame: false,
@@ -78,12 +91,6 @@ function createCatWindow() {
 
   catWin.loadFile(path.join(__dirname, 'cat.html'));
 
-  catWin.on('moved', () => {
-    if (!catWin) return;
-    const b = catWin.getBounds();
-    store.set({ posX: b.x, posY: b.y });
-  });
-
   catWin.on('closed', () => {
     catWin = null;
   });
@@ -98,6 +105,9 @@ function createCatWindow() {
     // Respect a previously saved hidden state (e.g. left hidden last time).
     if (store.get('hidden')) {
       catWin.hide();
+    }
+    if (process.env.CATPET_SNAPSHOT) {
+      catWin.webContents.send('snapshot');
     }
   });
 
@@ -117,19 +127,118 @@ function startCursorTracking() {
       const ny = pt.y - drag.offsetY;
       catWin.setBounds({ x: Math.round(nx), y: Math.round(ny), width: b.width, height: b.height });
       catWin.webContents.send('cursor', { x: pt.x, y: pt.y, bounds: catWin.getBounds(), dragging: true });
+      lastActivityAt = Date.now();
       return;
     }
 
+    if (Math.hypot(pt.x - lastCursor.x, pt.y - lastCursor.y) > 2) lastActivityAt = Date.now();
+    lastCursor = { x: pt.x, y: pt.y };
     catWin.webContents.send('cursor', { x: pt.x, y: pt.y, bounds: b, dragging: false });
   }, 1000 / 30);
 }
 
+function clampN(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function startWalking() {
+  if (walkTimer) clearInterval(walkTimer);
+  walkTimer = setInterval(stepWalk, 1000 / 30);
+}
+
+function stepWalk() {
+  if (!catWin || catWin.isDestroyed() || !catWin.isVisible() || drag.active) return;
+  const now = Date.now();
+  const b = catWin.getBounds();
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const wa = display.workArea;
+
+  if (walk.moving) {
+    const dt = 1 / 30;
+    const speed = 75;
+    const dx = walk.tx - b.x;
+    const dy = walk.ty - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 3) {
+      walk.moving = false;
+      walk.nextAt = now + 5000 + Math.random() * 9000;
+      store.set({ posX: b.x, posY: b.y });
+      if (catWin) catWin.webContents.send('walk', { moving: false, dir: walk.dir });
+    } else {
+      const step = Math.min(dist, speed * dt);
+      const nx = b.x + (dx / dist) * step;
+      const ny = b.y + (dy / dist) * step;
+      catWin.setBounds({ x: Math.round(nx), y: Math.round(ny), width: b.width, height: b.height });
+      walk.dir = dx >= 0 ? 1 : -1;
+      catWin.webContents.send('walk', { moving: true, dir: walk.dir });
+    }
+    return;
+  }
+
+  // Decide whether to wander. Only while the user is active (so the cat can
+  // sleep when you're away).
+  const active = now - lastActivityAt < 14000;
+  if (now > walk.nextAt && active && store.get('wander')) {
+    const cur = screen.getCursorScreenPoint();
+    let tx, ty;
+    const r = Math.random();
+    if (r < 0.35) {
+      // curious — amble toward the cursor
+      tx = cur.x - b.width / 2 + (Math.random() * 80 - 40);
+      ty = cur.y - b.height + (Math.random() * 40 - 20);
+    } else {
+      // wander around the lower part of the screen
+      tx = wa.x + Math.random() * (wa.width - b.width);
+      ty = wa.y + (wa.height - b.height) - Math.random() * (wa.height * 0.35);
+    }
+    walk.tx = Math.round(clampN(tx, wa.x, wa.x + wa.width - b.width));
+    walk.ty = Math.round(clampN(ty, wa.y, wa.y + wa.height - b.height));
+    walk.dir = walk.tx >= b.x ? 1 : -1;
+    walk.moving = true;
+  }
+}
+
+function startInputHook() {
+  try {
+    const { uIOhook } = require('uiohook-napi');
+    uio = uIOhook;
+    uio.on('keydown', () => {
+      lastActivityAt = Date.now();
+      if (catWin && !catWin.isDestroyed() && catWin.isVisible()) {
+        catWin.webContents.send('input', { kind: 'key' });
+      }
+    });
+    uio.on('wheel', (e) => {
+      lastActivityAt = Date.now();
+      if (catWin && !catWin.isDestroyed() && catWin.isVisible()) {
+        catWin.webContents.send('scroll', { rotation: e.rotation });
+      }
+    });
+    uio.start();
+  } catch (err) {
+    // Global input hook unavailable (e.g. permissions) — the cat still works,
+    // it just won't react to typing/scrolling.
+    console.log('Input hook unavailable:', err && err.message);
+  }
+}
+
+function rendererSettings() {
+  return { ...store.getAll(), px: pxForSize(store.get('size')) };
+}
+
 function sendSettings() {
   if (catWin && !catWin.isDestroyed()) {
-    catWin.webContents.send('settings', store.getAll());
+    catWin.webContents.send('settings', rendererSettings());
   }
   if (settingsWin && !settingsWin.isDestroyed()) {
     settingsWin.webContents.send('settings', store.getAll());
+  }
+}
+
+function applyWindowSize() {
+  if (!catWin || catWin.isDestroyed()) return;
+  const dim = catDim();
+  const b = catWin.getBounds();
+  if (b.width !== dim || b.height !== dim) {
+    catWin.setBounds({ x: b.x, y: b.y, width: dim, height: dim });
   }
 }
 
@@ -316,10 +425,12 @@ function recenterCat() {
   if (!catWin) return;
   const display = screen.getPrimaryDisplay();
   const { width, height } = display.workAreaSize;
-  const x = Math.round(width / 2 - CAT_W / 2);
-  const y = Math.round(height / 2 - CAT_H / 2);
-  catWin.setBounds({ x, y, width: CAT_W, height: CAT_H });
+  const dim = catDim();
+  const x = Math.round(width / 2 - dim / 2);
+  const y = Math.round(height / 2 - dim / 2);
+  catWin.setBounds({ x, y, width: dim, height: dim });
   store.set({ posX: x, posY: y });
+  if (store.get('hidden')) setCatVisible(true);
 }
 
 // ---- Hide / show ----------------------------------------------------------
@@ -375,6 +486,8 @@ ipcMain.on('drag-start', () => {
   drag.active = true;
   drag.offsetX = pt.x - b.x;
   drag.offsetY = pt.y - b.y;
+  walk.moving = false;
+  walk.nextAt = Date.now() + 4000;
 });
 
 ipcMain.on('drag-end', () => {
@@ -416,11 +529,22 @@ ipcMain.handle('save-settings', (_e, patch) => {
   if (catWin) {
     catWin.setAlwaysOnTop(!!store.get('alwaysOnTop'), 'screen-saver');
   }
+  applyWindowSize();
   sendSettings();
   scheduleStretch();
   registerHotkey();
   updateTrayMenu();
   return store.getAll();
+});
+
+ipcMain.on('save-snapshot', (_e, { name, dataURL }) => {
+  try {
+    const fs = require('fs');
+    const dir = path.join(__dirname, '..', 'snapshots');
+    fs.mkdirSync(dir, { recursive: true });
+    const b64 = dataURL.replace(/^data:image\/png;base64,/, '');
+    fs.writeFileSync(path.join(dir, name + '.png'), Buffer.from(b64, 'base64'));
+  } catch (_) {}
 });
 
 ipcMain.handle('reset-settings', () => {
@@ -455,6 +579,8 @@ app.whenReady().then(() => {
   createTray();
   scheduleStretch();
   registerHotkey();
+  startWalking();
+  startInputHook();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createCatWindow();
@@ -471,6 +597,8 @@ app.on('before-quit', () => {
   if (cursorTimer) clearInterval(cursorTimer);
   if (stretchTimer) clearTimeout(stretchTimer);
   if (pomo.timer) clearInterval(pomo.timer);
+  if (walkTimer) clearInterval(walkTimer);
+  if (uio) { try { uio.stop(); } catch (_) {} }
 });
 
 app.on('will-quit', () => {

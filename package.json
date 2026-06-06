@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.catpet.desktop",
     "productName": "CatPet",
+    "npmRebuild": false,
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -24,15 +25,22 @@
       "src/**/*",
       "build/icon.*"
     ],
+    "asarUnpack": [
+      "**/node_modules/uiohook-napi/**"
+    ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.png"
@@ -49,18 +57,28 @@
       "artifactName": "CatPet-Portable-${version}.exe"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "icon": "build/icon.png",
       "category": "public.app-category.entertainment"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "icon": "build/icon.png",
       "category": "Utility"
     }
   },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
+  },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
   }
 }

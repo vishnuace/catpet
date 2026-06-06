@@ -1,5 +1,6 @@
 node_modules/
 dist/
+snapshots/
 *.log
 .DS_Store
 .wine/

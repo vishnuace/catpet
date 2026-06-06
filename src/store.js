@@ -15,6 +15,7 @@ const DEFAULTS = {
   followCursor: true,
   reactToSpeed: true,
   alwaysOnTop: true,
+  wander: true,
   sounds: false,
 
   // Personality

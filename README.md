@@ -31,14 +31,21 @@ macOS and Linux.
 
 | Interaction | The cat… |
 |---|---|
-| Move your mouse | follows the cursor with its eyes and leans toward it |
+| Move your mouse | follows the cursor with its eyes |
+| Leave it active | **walks around your desktop** on its own (toggle in Settings) |
 | Move the mouse fast near it | crouches and "hunts" the cursor, pupils dilate |
-| Wave the mouse around wildly | overheats — turns red with steam puffing up |
+| **Type on your keyboard** | taps along with its tiny paws |
+| **Type / move very fast** | overheats — turns red with steam puffing up |
+| **Scroll the mouse wheel** | unspools a little roll of paper with its paws |
 | Click & drag it | gets picked up and stretches like mochi, legs dangle |
 | Hover slowly over its head | gets petted — closes its eyes, purrs, hearts float up |
-| Leave it alone | breathes, blinks, swishes its tail, then falls asleep (z z z) |
+| Leave it alone | blinks, swishes its tail, then falls asleep (z z z) |
 | Right-click it | opens a quick menu (hide / stretch / Pomodoro / settings / quit) |
 | Double-click it | opens **Settings** |
+
+> Typing & scrolling reactions use a global input hook. On first run Windows may
+> ask to allow it; that's what lets the cat notice your keyboard even when it
+> isn't the focused window. Nothing is logged or sent anywhere.
 
 ### 🎬 Hide it instantly (movies / games / calls)
 
@@ -51,8 +58,10 @@ you launch it.
 
 Plus, from the tray icon (bottom-right of the taskbar) or Settings:
 
-- **Customise the cat** — coat colour, pattern colour, belly, eye colour, and
-  pattern style (solid / tabby / tuxedo / calico). There are quick presets too.
+- **Customise the cat** — coat colour, pattern colour, belly, eye colour,
+  pattern style (solid / tabby / tuxedo / calico), and **size** (small / medium
+  / large). There are quick presets too.
+- **Wander toggle** — let the cat stroll around the screen, or keep it put.
 - **Stretch reminders** — a friendly nudge every N minutes; the cat stretches
   with you.
 - **Pomodoro timer** — focus/break loop with a little pixel timer floating next
