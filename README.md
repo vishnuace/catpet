@@ -37,8 +37,17 @@ macOS and Linux.
 | Click & drag it | gets picked up and stretches like mochi, legs dangle |
 | Hover slowly over its head | gets petted — closes its eyes, purrs, hearts float up |
 | Leave it alone | breathes, blinks, swishes its tail, then falls asleep (z z z) |
-| Right-click it | opens a quick menu (stretch / Pomodoro / settings / quit) |
+| Right-click it | opens a quick menu (hide / stretch / Pomodoro / settings / quit) |
 | Double-click it | opens **Settings** |
+
+### 🎬 Hide it instantly (movies / games / calls)
+
+Press **`Ctrl + Alt + C`** anywhere to hide the cat, and press it again to bring
+it back. The shortcut works globally even while you're in a fullscreen video or
+game. You can also hide/show from the **tray icon** menu or the **Settings**
+window, and you can change the shortcut (or disable it) under
+**Settings → Hide / Show**. The cat remembers whether it was hidden the next time
+you launch it.
 
 Plus, from the tray icon (bottom-right of the taskbar) or Settings:
 
@@ -49,6 +58,8 @@ Plus, from the tray icon (bottom-right of the taskbar) or Settings:
 - **Pomodoro timer** — focus/break loop with a little pixel timer floating next
   to the cat.
 - **Tell it your name** — it greets you in reminders.
+- **Hide/show shortcut** — a global hotkey (default `Ctrl+Alt+C`) to hide the cat
+  for movies/games and bring it back instantly.
 - **Always on top**, **eyes follow cursor**, and other toggles.
 
 Everything is saved automatically between launches. No accounts, no telemetry.

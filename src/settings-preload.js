@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   onSettings: (cb) => ipcRenderer.on('settings', (_e, data) => cb(data)),
   startPomodoro: () => ipcRenderer.send('start-pomodoro'),
   stopPomodoro: () => ipcRenderer.send('stop-pomodoro'),
-  stretchNow: () => ipcRenderer.send('stretch-now')
+  stretchNow: () => ipcRenderer.send('stretch-now'),
+  setVisible: (val) => ipcRenderer.send('set-visible', val)
 });

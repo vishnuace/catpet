@@ -20,6 +20,10 @@ const DEFAULTS = {
   // Personality
   userName: '',
 
+  // Hide/show hotkey (global). Empty string disables it.
+  hotkeyToggle: 'CommandOrControl+Alt+C',
+  hidden: false,
+
   // Reminders / Pomodoro
   stretchEnabled: true,
   stretchEveryMin: 45,

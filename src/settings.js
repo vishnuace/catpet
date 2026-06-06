@@ -5,6 +5,7 @@ const fields = {
   eyeColor: 'value',
   pattern: 'value',
   userName: 'value',
+  hotkeyToggle: 'value',
   stretchEveryMin: 'value',
   pomodoroWorkMin: 'value',
   pomodoroBreakMin: 'value',
@@ -76,6 +77,8 @@ async function init() {
   el('startPomo').addEventListener('click', async () => { await save(); window.api.startPomodoro(); showStatus('Pomodoro started 🍅'); });
   el('stopPomo').addEventListener('click', () => { window.api.stopPomodoro(); showStatus('Stopped'); });
   el('stretchNow').addEventListener('click', () => { window.api.stretchNow(); showStatus('Stretch! 🙆'); });
+  el('hideNow').addEventListener('click', () => { window.api.setVisible(false); showStatus('Hidden — use the shortcut to bring it back'); });
+  el('showNow').addEventListener('click', () => { window.api.setVisible(true); showStatus('Cat is back 🐱'); });
   el('reset').addEventListener('click', async () => {
     const s = await window.api.resetSettings();
     fill(s);

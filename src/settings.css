@@ -146,3 +146,13 @@ footer {
 .link:hover { color: var(--accent); }
 #status { color: var(--accent2); font-size: 12px; opacity: 0; transition: opacity .3s; }
 #status.show { opacity: 1; }
+
+.hint { color: var(--muted); font-size: 11px; line-height: 1.4; margin: -4px 0 10px; }
+.hint code {
+  background: #1a1726;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+#hotkeyToggle { width: 160px; }

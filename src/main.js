@@ -6,7 +6,8 @@ const {
   Tray,
   Menu,
   nativeImage,
-  Notification
+  Notification,
+  globalShortcut
 } = require('electron');
 const path = require('path');
 const { Store } = require('./store');
@@ -94,6 +95,10 @@ function createCatWindow() {
     if (process.platform !== 'linux') {
       catWin.setIgnoreMouseEvents(true, { forward: true });
     }
+    // Respect a previously saved hidden state (e.g. left hidden last time).
+    if (store.get('hidden')) {
+      catWin.hide();
+    }
   });
 
   startCursorTracking();
@@ -103,6 +108,7 @@ function startCursorTracking() {
   if (cursorTimer) clearInterval(cursorTimer);
   cursorTimer = setInterval(() => {
     if (!catWin || catWin.isDestroyed()) return;
+    if (!catWin.isVisible()) return;
     const pt = screen.getCursorScreenPoint();
     const b = catWin.getBounds();
 
@@ -255,10 +261,26 @@ function buildTrayPng() {
   return Buffer.alloc(0);
 }
 
+function prettyAccel(accel) {
+  const isMac = process.platform === 'darwin';
+  return accel
+    .replace(/CommandOrControl|CmdOrCtrl/g, isMac ? 'Cmd' : 'Ctrl')
+    .replace(/Command|Cmd/g, 'Cmd')
+    .replace(/Control|Ctrl/g, 'Ctrl');
+}
+
 function updateTrayMenu() {
   if (!tray) return;
+  const isHidden = !!store.get('hidden');
+  const hk = (store.get('hotkeyToggle') || '').trim();
+  const hkLabel = hk ? `  (${prettyAccel(hk)})` : '';
   const menu = Menu.buildFromTemplate([
     { label: 'CatPet 🐱', enabled: false },
+    { type: 'separator' },
+    {
+      label: (isHidden ? 'Show cat' : 'Hide cat') + hkLabel,
+      click: () => setCatVisible(isHidden)
+    },
     { type: 'separator' },
     {
       label: 'Stretch now',
@@ -300,6 +322,41 @@ function recenterCat() {
   store.set({ posX: x, posY: y });
 }
 
+// ---- Hide / show ----------------------------------------------------------
+
+function setCatVisible(visible) {
+  store.set({ hidden: !visible });
+  if (!catWin || catWin.isDestroyed()) return;
+  if (visible) {
+    catWin.showInactive();
+    catWin.setAlwaysOnTop(!!store.get('alwaysOnTop'), 'screen-saver');
+  } else {
+    catWin.hide();
+  }
+  updateTrayMenu();
+}
+
+function toggleCatVisible() {
+  setCatVisible(!!store.get('hidden'));
+}
+
+let registeredHotkey = null;
+function registerHotkey() {
+  if (registeredHotkey) {
+    try { globalShortcut.unregister(registeredHotkey); } catch (_) {}
+    registeredHotkey = null;
+  }
+  const accel = (store.get('hotkeyToggle') || '').trim();
+  if (!accel) return true;
+  try {
+    const ok = globalShortcut.register(accel, () => toggleCatVisible());
+    if (ok) registeredHotkey = accel;
+    return ok;
+  } catch (_) {
+    return false;
+  }
+}
+
 function createTray() {
   const icon = makeTrayIcon();
   tray = new Tray(icon);
@@ -337,7 +394,9 @@ ipcMain.on('set-ignore', (_e, val) => {
 ipcMain.on('open-settings', () => createSettingsWindow());
 
 ipcMain.on('cat-context-menu', () => {
+  const hk = (store.get('hotkeyToggle') || '').trim();
   const menu = Menu.buildFromTemplate([
+    { label: 'Hide cat' + (hk ? `  (${prettyAccel(hk)})` : ''), click: () => setCatVisible(false) },
     { label: 'Stretch now', click: () => triggerStretch() },
     pomo.active
       ? { label: 'Stop Pomodoro', click: () => stopPomodoro() }
@@ -359,6 +418,8 @@ ipcMain.handle('save-settings', (_e, patch) => {
   }
   sendSettings();
   scheduleStretch();
+  registerHotkey();
+  updateTrayMenu();
   return store.getAll();
 });
 
@@ -366,8 +427,13 @@ ipcMain.handle('reset-settings', () => {
   store.reset();
   sendSettings();
   scheduleStretch();
+  registerHotkey();
+  updateTrayMenu();
   return store.getAll();
 });
+
+ipcMain.on('toggle-visible', () => toggleCatVisible());
+ipcMain.on('set-visible', (_e, val) => setCatVisible(!!val));
 
 ipcMain.on('start-pomodoro', () => startPomodoro());
 ipcMain.on('stop-pomodoro', () => stopPomodoro());
@@ -388,6 +454,7 @@ app.whenReady().then(() => {
   createCatWindow();
   createTray();
   scheduleStretch();
+  registerHotkey();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createCatWindow();
@@ -404,4 +471,8 @@ app.on('before-quit', () => {
   if (cursorTimer) clearInterval(cursorTimer);
   if (stretchTimer) clearTimeout(stretchTimer);
   if (pomo.timer) clearInterval(pomo.timer);
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
