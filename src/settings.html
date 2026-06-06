@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <link rel="stylesheet" href="settings.css" />
+  <title>CatPet Settings</title>
+</head>
+<body>
+  <header>
+    <h1>🐱 CatPet</h1>
+    <p class="sub">Your pixel cat that lives on the desktop</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Appearance</h2>
+      <div class="row">
+        <label>Coat colour</label>
+        <input type="color" id="baseColor" />
+      </div>
+      <div class="row">
+        <label>Pattern colour</label>
+        <input type="color" id="patternColor" />
+      </div>
+      <div class="row">
+        <label>Belly / chest</label>
+        <input type="color" id="bellyColor" />
+      </div>
+      <div class="row">
+        <label>Eye colour</label>
+        <input type="color" id="eyeColor" />
+      </div>
+      <div class="row">
+        <label>Pattern</label>
+        <select id="pattern">
+          <option value="solid">Solid</option>
+          <option value="tabby">Tabby (stripes)</option>
+          <option value="tuxedo">Tuxedo</option>
+          <option value="calico">Calico (patches)</option>
+        </select>
+      </div>
+      <div class="presets">
+        <button class="preset" data-base="#f5c98a" data-pat="#c6843e" data-belly="#fff4e2" data-eye="#6fcf57" data-pattern="tabby">Orange Tabby</button>
+        <button class="preset" data-base="#3a3a40" data-pat="#22222a" data-belly="#f4f4f4" data-eye="#f7c948" data-pattern="tuxedo">Tuxedo</button>
+        <button class="preset" data-base="#f4f4f4" data-pat="#d98b4a" data-belly="#ffffff" data-eye="#6fcf57" data-pattern="calico">Calico</button>
+        <button class="preset" data-base="#cfcfd6" data-pat="#9aa0ad" data-belly="#ffffff" data-eye="#5ec5e8" data-pattern="tabby">Grey</button>
+        <button class="preset" data-base="#2b2b30" data-pat="#1c1c20" data-belly="#2b2b30" data-eye="#7be0a0" data-pattern="solid">Black</button>
+        <button class="preset" data-base="#f6e7d2" data-pat="#caa97e" data-belly="#fff" data-eye="#7aa0ff" data-pattern="solid">Cream</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Behaviour</h2>
+      <div class="row check"><label>Eyes follow my cursor</label><input type="checkbox" id="followCursor" /></div>
+      <div class="row check"><label>React to fast movement</label><input type="checkbox" id="reactToSpeed" /></div>
+      <div class="row check"><label>Always on top</label><input type="checkbox" id="alwaysOnTop" /></div>
+      <div class="row">
+        <label>Your name (cat calls you this)</label>
+        <input type="text" id="userName" maxlength="20" placeholder="optional" />
+      </div>
+    </section>
+
+    <section>
+      <h2>Reminders</h2>
+      <div class="row check"><label>Stretch reminders</label><input type="checkbox" id="stretchEnabled" /></div>
+      <div class="row">
+        <label>Stretch every (minutes)</label>
+        <input type="number" id="stretchEveryMin" min="1" max="240" />
+      </div>
+      <button id="stretchNow" class="ghost">Stretch now 🙆</button>
+    </section>
+
+    <section>
+      <h2>Pomodoro</h2>
+      <div class="row">
+        <label>Focus length (min)</label>
+        <input type="number" id="pomodoroWorkMin" min="1" max="180" />
+      </div>
+      <div class="row">
+        <label>Break length (min)</label>
+        <input type="number" id="pomodoroBreakMin" min="1" max="60" />
+      </div>
+      <div class="btns">
+        <button id="startPomo" class="primary">Start Pomodoro 🍅</button>
+        <button id="stopPomo" class="ghost">Stop</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <button id="reset" class="link">Reset to defaults</button>
+    <span id="status"></span>
+  </footer>
+
+  <script src="settings.js"></script>
+</body>
+</html>
